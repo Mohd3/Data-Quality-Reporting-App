@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import re
 import streamlit as st
 import warnings
@@ -33,6 +34,17 @@ def color_coding(row):
     elif completeness_score <= 50:
         return ['background-color: #ffb15e'] * len(row)  # Orange
     return [''] * len(row)
+
+def Outliers(col):
+    Q1 = col.quantile(0.25)
+    Q3 = col.quantile(0.75)
+    IQR = Q3 - Q1
+
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+
+    outliers = col[(col < lower_bound) | (col > upper_bound)]
+    return outliers    
 
 # def summ(df):
 #     summary = df.describe(include='all')
@@ -93,14 +105,31 @@ def Quality(df):
         completeness_data['Completeness Score'].append("{:.2f}%".format(completeness_score))
         completeness_data['Null Values'].append(null_count)
         completeness_data['Null Percentage'].append("{:.2f}%".format(null_percentage))
-
+ 
+    st.write("_______________________________________________")
+    st.subheader('Data Completeness Scores')
     completeness_df = pd.DataFrame(completeness_data)
     completeness_df = completeness_df.style.apply(color_coding, axis=1)
 
-    st.write("_______________________________________________")
-
     st.dataframe(completeness_df)
     st.write("Total Completeness Score: {:.2f}%".format(total_completeness_score))
+    st.write("_______________________________________________")
+
+    # Calculate and display the number of outliers for each numerical column
+    numerical_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    outlier_counts = {col: Outliers(df[col]) for col in numerical_cols}
+
+    st.subheader('Outliers')
+    outlier_data = {'Column': [], 'Outlier Count': [], 'Outlier Percentage': []}
+    for col, outliers in outlier_counts.items():
+        outlier_data['Column'].append(col)
+        outlier_data['Outlier Count'].append(len(outliers))
+        outlier_percentage = (len(outliers) / len(df[col])) * 100
+        outlier_data['Outlier Percentage'].append("{:.2f}%".format(outlier_percentage))
+
+    outlier_df = pd.DataFrame(outlier_data)
+    st.dataframe(outlier_df)
+
     st.write("_______________________________________________")
 
     today = pd.Timestamp(date.today())  # Convert today to a pandas Timestamp object
@@ -110,7 +139,7 @@ def Quality(df):
         expired_Ejari_df = df[pd.to_datetime(df["Ejari Expiry Date"], errors='coerce') < today]
 
         if not expired_Ejari_df.empty:
-            st.write("Expired Ejari:")
+            st.subheader("Expired Ejari")
             st.dataframe(expired_Ejari_df)
             ex_ajari_count =  len(expired_Ejari_df['EC Code'])
             ex_ajari_percent = len(expired_Ejari_df['EC Code']) / len(df['EC Code'])
@@ -125,7 +154,7 @@ def Quality(df):
         expired_passports = df[pd.to_datetime(df["Passport Expiry"], errors='coerce') < today]
 
         if not expired_passports.empty:
-            st.write("Expired Passports:")
+            st.subheader("Expired Passports")
             st.dataframe(expired_passports)
             ex_pass_count =  len(expired_passports['C Code'])
             ex_pass_percent = len(expired_passports['C Code']) / len(df['C Code'])
@@ -139,7 +168,7 @@ def Quality(df):
         expired_EID = df[pd.to_datetime(df["EID Expiry"], errors='coerce') < today]
 
         if not expired_EID.empty:
-            st.write("Expired EIDs:")
+            st.subheader("Expired EIDs")
             st.dataframe(expired_EID)
             ex_EID_count =  len(expired_EID['C Code'])
             ex_EID_percent = len(expired_EID['C Code']) / len(df['C Code'])
@@ -153,7 +182,7 @@ def Quality(df):
         expired_trd = df[pd.to_datetime(df["Trade License Expiry Date"], errors='coerce') < today]
 
         if not expired_trd.empty:
-            st.write("Expired Trade Licenses:")
+            st.subheader("Expired Trade Licenses")
             st.dataframe(expired_trd)
             ex_trd_count =  len(expired_trd['Accountnum'])
             ex_trd_percent = len(expired_trd['Accountnum']) / len(df['Accountnum'])
@@ -166,9 +195,10 @@ def Quality(df):
 
 def main():
     st.title('Data Quality Reporting Tool')
-    st.write('Upload your dataset and get data quality scores.')
+    st.subheader('Upload your dataset and get data quality scores.')
 
     uploaded_file = st.file_uploader('Upload a CSV or Excel file', type=['csv', 'xlsx'])
+    st.write("_______________________________________________")
 
     if uploaded_file:
         try:
@@ -183,7 +213,7 @@ def main():
             st.error("An error occurred while reading the dataset: {}".format(str(e)))
             return
 
-        st.subheader('Data Quality Scores')
+        st.subheader('Data Validity Scores')
         Quality(df)
 
 if __name__ == '__main__':
