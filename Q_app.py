@@ -90,8 +90,8 @@ def Quality(df):
     invalid_df = pd.DataFrame(invalid_data)
     st.dataframe(invalid_df)
 
-    if not invalid_df.empty:
-        st.write("Total Validity Score: {:.2f}%".format(validity_score))
+    #if not invalid_df.empty:
+        #st.write("Total Validity Score: {:.2f}%".format(validity_score))
     st.write("_______________________________________________")
     st.write("Total Uniqueness Score: {:.2f}%".format(uniqueness_score), "  (", dups, "Duplicate Records)")
 
