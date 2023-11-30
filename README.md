@@ -1,4 +1,4 @@
-# Data-Quality-App
+# Data Quality Reporting App
 This is a data quality reporting application developed using Python, with the Streamlit library for the user interface.
 
 To run the app, open the CMD and type the following command:
